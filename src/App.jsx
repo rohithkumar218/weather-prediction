@@ -480,12 +480,13 @@ function App() {
   }, [activeNav, reducedMotion]);
 
   useEffect(() => {
-    loadWeather(initialPlace);
-    return () => {
-      abortRef.current?.abort();
-      locationLookupRef.current?.abort();
-    };
-  }, [loadWeather]);
+  detectLocation();
+
+  return () => {
+    abortRef.current?.abort();
+    locationLookupRef.current?.abort();
+  };
+}, []);
 
   useEffect(() => {
     const controller = new AbortController();
