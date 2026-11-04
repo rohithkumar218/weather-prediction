@@ -885,7 +885,21 @@ const weatherScene = isRainy
 
   return (
     <div className={`app-shell editorial-theme${darkMode ? ' dark-mode' : ''}`}>
-      {themeTransition && <div className={`theme-transition-overlay${themeTransition === 'dark' ? ' reverse' : ''}`} aria-hidden="true"><img src={themeTransition === 'dark' ? '/theme-dark-transition.gif' : '/theme-light-transition.gif'} alt="" /></div>}
+  {themeTransition && (
+    <div
+      className={`theme-transition-overlay${themeTransition === 'dark' ? ' reverse' : ''}`}
+      aria-hidden="true"
+    >
+      <img
+        src={publicAsset(
+          themeTransition === 'dark'
+            ? 'theme-dark-transition.gif'
+            : 'theme-light-transition.gif'
+        )}
+        alt=""
+      />
+    </div>
+  )}
       <aside className={`sidebar${sidebarOpen ? ' sidebar-open' : ''}`}>
         <a href="#" className="brand" onClick={(event) => { event.preventDefault(); setActiveNav('Overview'); setSidebarOpen(false); }}><span className="brand-mark"><Sun size={21} /></span><span>skyline<span className="brand-dot">.</span></span></a>
         <button className="icon-button desktop-theme-toggle" aria-label={`Switch to ${darkMode ? 'light' : 'dark'} mode`} title={`Switch to ${darkMode ? 'light' : 'dark'} mode`} aria-pressed={darkMode} onClick={toggleTheme}>{darkMode ? <Sun size={19} /> : <Moon size={19} />}</button>
