@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { aqiCategory, getWeather, reverseGeocode, searchPlaces, weatherDescription } from './weather.js';
 import { getSupabaseClient, isSupabaseConfigured } from './supabase.js';
+const publicAsset = (filename) =>
+  `${import.meta.env.BASE_URL}${filename}`;
 
 const TemperatureChart = lazy(() => import('./TemperatureChart.jsx'));
 const WeatherMap = lazy(() => import('./WeatherMap.jsx'));
@@ -637,17 +639,37 @@ function App() {
   const isRainy = ['rainy', 'stormy'].includes(activeMood);
   const isCloudy = ['cloudy', 'snowy'].includes(activeMood);
   const isWindy = activeMood === 'sunny' && current?.wind_speed_10m >= WINDY_THRESHOLD_KMH;
-  const weatherScene = isRainy
-    ? isDay
-      ? { animation: '/day-rain-scene.gif', poster: '/day-rain-scene-poster.png' }
-      : { animation: '/weather-scene.gif', poster: '/weather-scene-poster.png' }
-    : isCloudy
-      ? { animation: '/cloudy-scene.gif', poster: '/cloudy-scene-poster.png' }
-      : isWindy
-      ? { animation: '/wind-scene.gif', poster: '/wind-scene-poster.png' }
+  
+const weatherScene = isRainy
+  ? isDay
+    ? {
+        animation: publicAsset('day-rain-scene.gif'),
+        poster: publicAsset('day-rain-scene-poster.png')
+      }
+    : {
+        animation: publicAsset('weather-scene.gif'),
+        poster: publicAsset('weather-scene-poster.png')
+      }
+  : isCloudy
+    ? {
+        animation: publicAsset('cloudy-scene.gif'),
+        poster: publicAsset('cloudy-scene-poster.png')
+      }
+    : isWindy
+      ? {
+          animation: publicAsset('wind-scene.gif'),
+          poster: publicAsset('wind-scene-poster.png')
+        }
       : isDay
-        ? { animation: '/daylight-scene.gif', poster: '/daylight-scene-poster.png' }
-        : { animation: '/night-scene.gif', poster: '/night-scene-poster.png' };
+        ? {
+            animation: publicAsset('daylight-scene.gif'),
+            poster: publicAsset('daylight-scene-poster.png')
+          }
+        : {
+            animation: publicAsset('night-scene.gif'),
+            poster: publicAsset('night-scene-poster.png')
+          };
+
   const airNow = air?.current;
   const aqi = airNow?.us_aqi;
   const airStatus = aqiCategory(aqi);
@@ -1005,7 +1027,12 @@ function App() {
                           <span>{weatherDescription(daily.weather_code[1]).label}</span>
                           <small>Low {round(convertTemp(daily.temperature_2m_min[1], unit))}°</small>
                         </div>
-                        <img className="tomorrow-weather-video" src={tomorrowIsRainy ? '/tomorrow-rain.gif' : '/tomorrow-walk.gif'} alt="" aria-hidden="true" />
+                        <img
+  className="tomorrow-weather-video"
+  src={publicAsset(tomorrowIsRainy ? 'tomorrow-rain.gif' : 'tomorrow-walk.gif')}
+  alt=""
+  aria-hidden="true"
+/>
                         <TomorrowIllustration mood={tomorrowMood} />
                       </article>
                     </section>
