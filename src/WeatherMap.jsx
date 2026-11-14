@@ -7,6 +7,7 @@ import {
   Sun, Tornado, Wind, Waves, Zap, Eye, Clock,
 } from 'lucide-react';
 import { weatherDescription } from './weather.js';
+import SatelliteLayer, { buildSatelliteFrames, SATELLITE_FRAME_COUNT } from './SatelliteLayer.jsx';
 import 'leaflet/dist/leaflet.css';
 
 const RADAR_METADATA_URL = 'https://api.rainviewer.com/public/weather-maps.json';
@@ -645,6 +646,10 @@ export default function WeatherMap({ place, favoriteWeather, weatherCode, temper
   const [stormStatus, setStormStatus] = useState('');
   const [firesEnabled, setFiresEnabled] = useState(false);
   const [nightEnabled, setNightEnabled] = useState(false);
+  const [satelliteEnabled, setSatelliteEnabled] = useState(false);
+  const [satelliteFrames, setSatelliteFrames] = useState(() => buildSatelliteFrames());
+  const [satelliteIndex, setSatelliteIndex] = useState(SATELLITE_FRAME_COUNT - 1);
+  const [satellitePlaying, setSatellitePlaying] = useState(false);
   const [viewport, setViewport] = useState(null);
   const [measurementMode, setMeasurementMode] = useState('');
   const [measurementPoints, setMeasurementPoints] = useState([]);
@@ -735,6 +740,26 @@ export default function WeatherMap({ place, favoriteWeather, weatherCode, temper
     setForecastPlaying(false);
   }, [weatherLayer]);
 
+  // Live satellite: refresh the list of recent frames every 10 minutes while enabled.
+  useEffect(() => {
+    setSatellitePlaying(false);
+    setSatelliteIndex(SATELLITE_FRAME_COUNT - 1);
+    if (!satelliteEnabled) return undefined;
+    const refresh = () => setSatelliteFrames(buildSatelliteFrames());
+    refresh();
+    const intervalId = window.setInterval(refresh, 10 * 60 * 1000);
+    return () => window.clearInterval(intervalId);
+  }, [satelliteEnabled]);
+
+  // Live satellite: playback animation.
+  useEffect(() => {
+    if (!satellitePlaying) return undefined;
+    const intervalId = window.setInterval(() => {
+      setSatelliteIndex((index) => (index + 1) % SATELLITE_FRAME_COUNT);
+    }, 700);
+    return () => window.clearInterval(intervalId);
+  }, [satellitePlaying]);
+
   const chooseForecastLayer = (layer) => {
     setWeatherLayer((activeLayer) => activeLayer === layer ? '' : layer);
     setLayersOpen(false);
@@ -773,6 +798,7 @@ export default function WeatherMap({ place, favoriteWeather, weatherCode, temper
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url={STREET_TILES}
         />}
+        <SatelliteLayer enabled={satelliteEnabled} frame={satelliteFrames[satelliteIndex]} />
         {radarEnabled && radarFrame && <TileLayer
           key={radarFrame.path}
           attribution='Radar &copy; <a href="https://www.rainviewer.com/">RainViewer</a>'
@@ -875,6 +901,7 @@ export default function WeatherMap({ place, favoriteWeather, weatherCode, temper
           <span className="map-layer-section-label">LIVE DATA</span>
           <div className="map-layer-options">
             <button type="button" aria-pressed={radarEnabled} className={radarEnabled ? 'selected' : ''} onClick={chooseRadarLayer}><Radar size={14} />Radar</button>
+            <button type="button" aria-pressed={satelliteEnabled} className={satelliteEnabled ? 'selected' : ''} onClick={() => { setSatelliteEnabled((enabled) => !enabled); setLayersOpen(false); }}><Satellite size={14} />Live Satellite</button>
             <button type="button" aria-pressed={stormEnabled} className={stormEnabled ? 'selected' : ''} onClick={() => { setStormEnabled((enabled) => !enabled); setLayersOpen(false); }}><Tornado size={14} />Storms</button>
             <button type="button" aria-pressed={firesEnabled} disabled={!FIRMS_MAP_KEY} className={firesEnabled ? 'selected' : ''} onClick={() => setFiresEnabled((enabled) => !enabled)}><Flame size={14} />Fires</button>
             <button type="button" aria-pressed={nightEnabled} className={nightEnabled ? 'selected' : ''} onClick={() => setNightEnabled((enabled) => !enabled)}><Sun size={14} />Day/Night</button>
@@ -913,6 +940,26 @@ export default function WeatherMap({ place, favoriteWeather, weatherCode, temper
           />
           <button type="button" aria-label="Show current forecast hour" onClick={() => { setForecastPlaying(false); setForecastHourIndex(forecastStartHourIndex); }}><RotateCcw size={14} /></button>
         </div>}
+      </div>}
+      {satelliteEnabled && <div className="radar-timeline" aria-label="Satellite playback controls">
+        <div className="radar-timeline-header">
+          <span><Satellite size={14} /> Live Satellite <small>· Himawari infrared</small></span>
+          <strong>{satelliteFrames[satelliteIndex] ? formatRadarTime(satelliteFrames[satelliteIndex].getTime() / 1000, timezone) : 'Loading…'}</strong>
+        </div>
+        <div className="radar-controls">
+          <button type="button" aria-label={satellitePlaying ? 'Pause' : 'Play'} onClick={() => setSatellitePlaying((playing) => !playing)}>
+            {satellitePlaying ? <Pause size={15} /> : <Play size={15} />}
+          </button>
+          <input
+            type="range"
+            min="0"
+            max={SATELLITE_FRAME_COUNT - 1}
+            value={satelliteIndex}
+            aria-label="Satellite time"
+            onChange={(event) => { setSatellitePlaying(false); setSatelliteIndex(Number(event.target.value)); }}
+          />
+          <button type="button" aria-label="Latest" onClick={() => { setSatellitePlaying(false); setSatelliteIndex(SATELLITE_FRAME_COUNT - 1); }}><Clock size={14} /></button>
+        </div>
       </div>}
       {radarEnabled && <div className="radar-timeline" aria-label="Radar playback controls">
         <div className="radar-timeline-header">
